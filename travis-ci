@@ -1,0 +1,23 @@
+#!/bin/bash -ex
+
+if ! command -v cppsm > /dev/null; then
+  git submodule update --init --recursive -- .cppsm
+  export PATH="$PWD/.cppsm/.cli/bin:$PATH"
+fi
+
+export CMAKE_BUILD_TYPE
+
+for CMAKE_BUILD_TYPE in Debug Release ; do
+  if [ "$TRAVIS_OS_NAME" = "linux" ] ; then
+    CC=gcc-8 CXX=g++-8 cppsm test
+    CC=clang-7 CXX=clang++-7 cppsm test
+  elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
+    if ! command -v make > /dev/null ; then
+      choco install make
+    fi
+    cppsm test
+    CC='' CXX='' cppsm test
+  else
+    cppsm test
+  fi
+done
