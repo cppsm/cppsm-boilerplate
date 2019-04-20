@@ -7,12 +7,12 @@ fi
 
 export CMAKE_BUILD_TYPE
 
-for CMAKE_BUILD_TYPE in Debug Release ; do
-  if [ "$TRAVIS_OS_NAME" = "linux" ] ; then
+for CMAKE_BUILD_TYPE in Debug Release; do
+  if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     CC=gcc-8 CXX=g++-8 cppsm test
     CC=clang-7 CXX=clang++-7 cppsm test
   elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
-    if ! command -v make > /dev/null ; then
+    if ! command -v make > /dev/null; then
       choco install make
     fi
     CC='' CXX='' cppsm test
@@ -21,3 +21,26 @@ for CMAKE_BUILD_TYPE in Debug Release ; do
     cppsm test
   fi
 done
+
+if ! command -v prettier > /dev/null; then
+  if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+    brew install prettier
+  fi
+fi
+
+if ! command -v clang-format > /dev/null; then
+  if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+    brew install clang-format
+  fi
+fi
+
+if command -v clang-format > /dev/null &&
+    command -v prettier > /dev/null;
+then
+  cppsm format
+  if [[ $(git status --porcelain) ]] ; then
+    git status
+    git diff
+    exit 1
+  fi
+fi
