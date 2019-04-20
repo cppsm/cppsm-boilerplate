@@ -15,8 +15,8 @@ for CMAKE_BUILD_TYPE in Debug Release ; do
     if ! command -v make > /dev/null ; then
       choco install make
     fi
-    cppsm test
     CC='' CXX='' cppsm test
+    cppsm test
   else
     cppsm test
   fi
