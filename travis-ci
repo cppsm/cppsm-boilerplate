@@ -17,8 +17,11 @@ for CMAKE_BUILD_TYPE in Debug Release; do
     fi
     CC='' CXX='' cppsm test
     cppsm test
-  else
+  elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     cppsm test
+  else
+    echo "Unsupported OS: $TRAVIS_OS_NAME"
+    exit 1
   fi
 done
 
@@ -34,13 +37,21 @@ if ! command -v clang-format > /dev/null; then
   fi
 fi
 
-if command -v clang-format > /dev/null &&
-    command -v prettier > /dev/null;
-then
+if command -v clang-format > /dev/null && command -v prettier > /dev/null; then
   cppsm format
   if [[ $(git status --porcelain) ]] ; then
     git status
     git diff
     exit 1
   fi
+fi
+
+if [ -n "$CODECOV" ] && [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  CLEAN=1 COVERAGE=1 cppsm test
+  if ! command -v lcov > /dev/null; then
+    brew install lcov
+  fi
+  lcov --capture --directory . --output-file coverage.info
+  lcov --remove coverage.info '/Applications/*' --output-file coverage.info
+  bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
 fi

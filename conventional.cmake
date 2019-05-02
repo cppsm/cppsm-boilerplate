@@ -1,3 +1,12 @@
+option(COVERAGE "Enable coverage reporting (only on GCC / Clang)" OFF)
+
+function(target_conventional_config name)
+  if(COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(${name} INTERFACE -g --coverage)
+    target_link_options(${name} INTERFACE --coverage)
+  endif()
+endfunction()
+
 function(add_conventional_library name)
   file(GLOB_RECURSE library_files "library/*.hpp" "library/*.cpp")
   file(GLOB_RECURSE include_files "include/${name}/*.hpp")
@@ -19,6 +28,7 @@ function(add_conventional_library name)
       PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/library")
   endif()
+  target_conventional_config(${name})
 endfunction()
 
 function(add_conventional_executable name)
@@ -28,6 +38,7 @@ function(add_conventional_executable name)
   target_include_directories(${name}
     PRIVATE
       "${CMAKE_CURRENT_SOURCE_DIR}/program")
+  target_conventional_config(${name})
 endfunction()
 
 function(add_conventional_executable_test name)
@@ -37,6 +48,7 @@ function(add_conventional_executable_test name)
   target_include_directories(${name}
     PRIVATE
       "${CMAKE_CURRENT_SOURCE_DIR}/testing")
+  target_conventional_config(${name})
   add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
