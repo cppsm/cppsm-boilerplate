@@ -9,8 +9,8 @@ export CMAKE_BUILD_TYPE
 
 for CMAKE_BUILD_TYPE in Debug Release; do
   if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    CC=gcc-8 CXX=g++-8 cppsm test
-    CC=clang-7 CXX=clang++-7 cppsm test
+    CC="$GNU_CC" CXX="$GNU_CXX" cppsm test
+    CC="$CLANG_CC" CXX="$CLANG_CXX" cppsm test
   elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
     if ! command -v make > /dev/null; then
       choco install make
