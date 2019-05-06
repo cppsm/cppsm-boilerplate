@@ -1,5 +1,8 @@
 #!/bin/bash -ex
 
+export CMAKE_HELP
+CMAKE_HELP="$(cmake --help)"
+
 if ! command -v cppsm > /dev/null; then
   git submodule update --init --recursive -- .cppsm
   export PATH="$PWD/.cppsm/.cli/bin:$PATH"
