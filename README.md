@@ -9,6 +9,7 @@ project.
 - [CMake functions](#cmake-functions)
   - [`add_conventional_executable(name)`](#add_conventional_executable)
   - [`add_conventional_executable_test(name)`](#add_conventional_executable_test)
+  - [`add_conventional_executable_tests(...)`](#add_conventional_executable_tests)
   - [`add_conventional_library(name)`](#add_conventional_library)
 - [Travis](#travis)
 
@@ -37,6 +38,18 @@ following structure:
       *.(cpp|hpp)
 
 Add dependencies using `target_link_libraries` separately.
+
+### <a id="add_conventional_executable_tests"></a> [≡](#contents) [`add_conventional_executable_tests(...)`](#add_conventional_executable_tests)
+
+Adds an executable test target per `.cpp` file. Assumes that the target
+directory has the following structure:
+
+    CMakeLists.txt
+    testing/
+      *.cpp
+
+The arguments given to `add_conventional_executable_tests` are passed to
+`target_link_libraries` for each added test target.
 
 ### <a id="add_conventional_library"></a> [≡](#contents) [`add_conventional_library(name)`](#add_conventional_library)
 
