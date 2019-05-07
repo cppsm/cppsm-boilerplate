@@ -23,7 +23,7 @@ for CMAKE_BUILD_TYPE in Debug Release; do
     CC='' CXX='' cppsm test
     cppsm test
   elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
-    cppsm test
+    CC="clang" CXX="clang++" cppsm test
   else
     echo "Unsupported OS: $TRAVIS_OS_NAME"
     exit 1
