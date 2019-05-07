@@ -2,6 +2,17 @@
 
 if [ "$XTRACE" = 1 ]; then set -x; fi
 
+fold-start() {
+  FOLD=$((FOLD+1))
+  echo -e "travis_fold:start:cppsm.$FOLD\033[33;1m$1\033[0m"
+  travis_time_start
+}
+
+fold-end() {
+  travis_time_finish
+  echo -e "\ntravis_fold:end:cppsm.$FOLD\r"
+}
+
 INSTALL_OUT="$TMPDIR/install.out"
 
 install-brew() {
@@ -50,15 +61,30 @@ export CMAKE_BUILD_TYPE
 
 for CMAKE_BUILD_TYPE in Debug Release; do
   if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+    fold-start "GCC-$CMAKE_BUILD_TYPE"
     CC="$GNU_CC" CXX="$GNU_CXX" cppsm test
+    fold-end
+
+    fold-start "Clang-$CMAKE_BUILD_TYPE"
     CC="$CLANG_CC" CXX="$CLANG_CXX" cppsm test
+    fold-end
   elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
+    fold-start "VC-$CMAKE_BUILD_TYPE"
     CC="" CXX="" cppsm test
+    fold-end
+
+    fold-start "GCC-$CMAKE_BUILD_TYPE"
     finish-install "$MAKE_INSTALL_PID"
     CC="gcc" CXX="g++" cppsm test
+    fold-end
   elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+    fold-start "Clang-$CMAKE_BUILD_TYPE"
     CC="clang" CXX="clang++" cppsm test
+    fold-end
+
+    fold-start "GCC-$CMAKE_BUILD_TYPE"
     CC="gcc-8" CXX="g++-8" cppsm test
+    fold-end
   else
     echo "Unsupported OS: $TRAVIS_OS_NAME"
     exit 1
@@ -66,12 +92,14 @@ for CMAKE_BUILD_TYPE in Debug Release; do
 done
 
 if [ -n "$CODECOV" ] && [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  fold-start "Code-coverage"
   CLEAN=1 COVERAGE=1 cppsm test
   finish-install "$LCOV_INSTALL_PID"
   lcov --capture --directory . --output-file coverage.info
   lcov --remove coverage.info '/Applications/*' --output-file coverage.info
   bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
   rm -f coverage.info
+  fold-end
 fi
 
 if [ "$TRAVIS_OS_NAME" = "osx" ]; then
@@ -80,10 +108,12 @@ if [ "$TRAVIS_OS_NAME" = "osx" ]; then
 fi
 
 if command -v clang-format > /dev/null && command -v prettier > /dev/null; then
+  fold-start "Format-check"
   cppsm format
   if [[ $(git status --porcelain) ]] ; then
     git status
     git diff
     exit 1
   fi
+  fold-end
 fi
