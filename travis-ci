@@ -17,11 +17,9 @@ for CMAKE_BUILD_TYPE in Debug Release; do
     CC="$GNU_CC" CXX="$GNU_CXX" cppsm test
     CC="$CLANG_CC" CXX="$CLANG_CXX" cppsm test
   elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
-    if ! command -v make > /dev/null; then
-      choco install make
-    fi
-    CC='' CXX='' cppsm test
-    cppsm test
+    CC="" CXX="" cppsm test
+    if ! command -v make > /dev/null; then choco install make; fi
+    CC="gcc" CXX="g++" cppsm test
   elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     CC="clang" CXX="clang++" cppsm test
   else
