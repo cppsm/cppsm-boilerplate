@@ -2,15 +2,39 @@
 
 if [ "$XTRACE" = 1 ]; then set -x; fi
 
-finish() {
+INSTALL_OUT="$TMPDIR/install.out"
+
+install-brew() {
+  if ! command -v "$1" > /dev/null; then
+    local INSTALL_LOCK="$TMPDIR/install.lock"
+    while ! shlock -f "$INSTALL_LOCK" -p $$ ; do
+      sleep 0.25
+    done
+    brew install "$1"
+    rm "$INSTALL_LOCK"
+  fi
+}
+
+install-choco() {
+  if ! command -v "$1" > /dev/null; then choco install "$1"; fi
+}
+
+finish-install() {
   if ! wait "$1"; then
-    cat "$2"
+    cat "$INSTALL_OUT"
     exit 1
   fi
 }
 
-if [ "$TRAVIS_OS_NAME" = "windows" ]; then
-  (if ! command -v make > /dev/null; then choco install make; fi) > .make-install.out & echo $!
+if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  install-brew lcov >> "$INSTALL_OUT" 2>&1 &
+  LCOV_INSTALL_PID=$!
+  install-brew prettier >> "$INSTALL_OUT" 2>&1 &
+  PRETTIER_INSTALL_PID=$!
+  install-brew clang-format >> "$INSTALL_OUT" 2>&1 &
+  CLANG_FORMAT_INSTALL_PID=$!
+elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
+  install-choco make >> "$INSTALL_OUT" 2>&1 &
   MAKE_INSTALL_PID=$!
 fi
 
@@ -30,7 +54,7 @@ for CMAKE_BUILD_TYPE in Debug Release; do
     CC="$CLANG_CC" CXX="$CLANG_CXX" cppsm test
   elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
     CC="" CXX="" cppsm test
-    finish $MAKE_INSTALL_PID .make-install.out
+    finish-install "$MAKE_INSTALL_PID"
     CC="gcc" CXX="g++" cppsm test
   elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     CC="clang" CXX="clang++" cppsm test
@@ -41,16 +65,18 @@ for CMAKE_BUILD_TYPE in Debug Release; do
   fi
 done
 
-if ! command -v prettier > /dev/null; then
-  if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-    brew install prettier
-  fi
+if [ -n "$CODECOV" ] && [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  CLEAN=1 COVERAGE=1 cppsm test
+  finish-install "$LCOV_INSTALL_PID"
+  lcov --capture --directory . --output-file coverage.info
+  lcov --remove coverage.info '/Applications/*' --output-file coverage.info
+  bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
+  rm -f coverage.info
 fi
 
-if ! command -v clang-format > /dev/null; then
-  if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-    brew install clang-format
-  fi
+if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  finish-install "$PRETTIER_INSTALL_PID"
+  finish-install "$CLANG_FORMAT_INSTALL_PID"
 fi
 
 if command -v clang-format > /dev/null && command -v prettier > /dev/null; then
@@ -60,14 +86,4 @@ if command -v clang-format > /dev/null && command -v prettier > /dev/null; then
     git diff
     exit 1
   fi
-fi
-
-if [ -n "$CODECOV" ] && [ "$TRAVIS_OS_NAME" = "osx" ]; then
-  CLEAN=1 COVERAGE=1 cppsm test
-  if ! command -v lcov > /dev/null; then
-    brew install lcov
-  fi
-  lcov --capture --directory . --output-file coverage.info
-  lcov --remove coverage.info '/Applications/*' --output-file coverage.info
-  bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
 fi
