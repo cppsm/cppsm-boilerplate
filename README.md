@@ -79,6 +79,7 @@ configurations:
   - GCC (8)
   - Clang (7)
 - OS X
+  - GCC (8)
   - Apple Clang (10)
 - Windows
   - Visual Studio (2017)
