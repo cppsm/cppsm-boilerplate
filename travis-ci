@@ -1,4 +1,6 @@
-#!/bin/bash -ex
+#!/bin/bash -e
+
+if [ "$XTRACE" = 1 ]; then set -x; fi
 
 export CMAKE_HELP
 CMAKE_HELP="$(cmake --help)"
