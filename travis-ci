@@ -2,6 +2,18 @@
 
 if [ "$XTRACE" = 1 ]; then set -x; fi
 
+finish() {
+  if ! wait "$1"; then
+    cat "$2"
+    exit 1
+  fi
+}
+
+if [ "$TRAVIS_OS_NAME" = "windows" ]; then
+  (if ! command -v make > /dev/null; then choco install make; fi) > .make-install.out & echo $!
+  MAKE_INSTALL_PID=$!
+fi
+
 export CMAKE_HELP
 CMAKE_HELP="$(cmake --help)"
 
@@ -18,7 +30,7 @@ for CMAKE_BUILD_TYPE in Debug Release; do
     CC="$CLANG_CC" CXX="$CLANG_CXX" cppsm test
   elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
     CC="" CXX="" cppsm test
-    if ! command -v make > /dev/null; then choco install make; fi
+    finish $MAKE_INSTALL_PID .make-install.out
     CC="gcc" CXX="g++" cppsm test
   elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     CC="clang" CXX="clang++" cppsm test
