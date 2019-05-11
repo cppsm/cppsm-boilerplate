@@ -2,31 +2,46 @@
 
 if [ "$XTRACE" = 1 ]; then set -x; fi
 
-locked() {
-  while ! shlock -f "$LOCK" -p $$ ; do sleep 0.25; done
-  "$@"
-  rm "$LOCK"
-}
+if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+  TMP="/tmp"
+elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  TMP="$TMPDIR"
+fi
+
+LOCK="$TMP/install.lock"
+OUT="$TMP/install.out"
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-  LOCK="/tmp/install.lock"
-  OUT="/tmp/install.out"
-  (flock $LOCK bash -c "sudo -E apt-add-repository -y ppa:ubuntu-toolchain-r/test && sudo -E apt-get -yq update && sudo -E apt-get -yq --no-install-suggests --no-install-recommends install libstdc++-8-dev") >> "$OUT" 2>&1 &
-  LIBSTD_INSTALL_PID=$!
-  (flock $LOCK sudo -E apt-get -yq --no-install-suggests --no-install-recommends install g++-8) >> "$OUT" 2>&1 &
-  GCC_INSTALL_PID=$!
+  locked() { flock "$LOCK" "$@"; }
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
-  LOCK="$TMPDIR/install.lock"
-  OUT="$TMPDIR/install.out"
-  locked brew install lcov >> "$OUT" 2>&1 &
-  LCOV_INSTALL_PID=$!
-  locked brew install prettier clang-format >> "$OUT" 2>&1 &
-  FORMAT_INSTALL_PID=$!
+  locked() {
+    while ! shlock -f "$LOCK" -p $$ ; do sleep 0.25; done
+    local EXIT=0
+    "$@" || EXIT=$?
+    rm -f "$LOCK"
+    return $EXIT
+  }
 elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
-  OUT="$TMP/install.out"
-  choco install make >> "$OUT" 2>&1 &
-  MAKE_INSTALL_PID=$!
+  locked() { "$@"; }
 fi
+
+finish() {
+  local EXIT=0
+  if ! wait "$1"; then
+    EXIT=$?
+    cat "$OUT"
+  fi
+  return $EXIT
+}
+
+concurrently() {
+  local VAR="$1"
+  shift
+  locked "$@" >> "$OUT" 2>&1 &
+  PID=$!
+  export "$VAR"=$PID
+  if [ "$INSTALL_WAIT" = 1 ]; then finish $PID; fi
+}
 
 folded() {
   FOLD=$((FOLD+1))
@@ -38,12 +53,15 @@ folded() {
   echo -e "\ntravis_fold:end:cppsm.$FOLD\r"
 }
 
-finish-install() {
-  if ! wait "$1"; then
-    cat "$OUT"
-    exit 1
-  fi
-}
+if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+  folded ... concurrently LIBSTD_INSTALL_PID bash -c "sudo -E apt-add-repository -y ppa:ubuntu-toolchain-r/test && sudo -E apt-get -yq update && sudo -E apt-get -yq --no-install-suggests --no-install-recommends install libstdc++-8-dev"
+  folded ... concurrently GCC_INSTALL_PID sudo -E apt-get -yq --no-install-suggests --no-install-recommends install g++-8
+elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+  folded ... concurrently LCOV_INSTALL_PID brew install lcov
+  folded ... concurrently FORMAT_INSTALL_PID brew install prettier clang-format
+elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
+  folded ... concurrently MAKE_INSTALL_PID choco install make
+fi
 
 export CMAKE_HELP
 CMAKE_HELP="$(cmake --help)"
@@ -56,13 +74,13 @@ fi
 for CONFIG in Debug Release; do
   export CMAKE_BUILD_TYPE=$CONFIG
   if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    folded ... finish-install "$LIBSTD_INSTALL_PID"
+    folded ... finish "$LIBSTD_INSTALL_PID"
     CC="clang" CXX="clang++" folded "Clang $CONFIG" cppsm test
-    folded ... finish-install "$GCC_INSTALL_PID"
+    folded ... finish "$GCC_INSTALL_PID"
     CC="gcc-8" CXX="g++-8" folded "GCC $CONFIG" cppsm test
   elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
     CC="" CXX="" folded "VC $CONFIG" cppsm test
-    folded ... finish-install "$MAKE_INSTALL_PID"
+    folded ... finish "$MAKE_INSTALL_PID"
     CC="gcc" CXX="g++" folded "GCC $CONFIG" cppsm test
   elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     CC="clang" CXX="clang++" folded "Clang $CONFIG" cppsm test
@@ -92,9 +110,11 @@ format-check() {
 
 if [ "$TRAVIS_OS_NAME" = "osx" ]; then
   if [ -n "$CODECOV" ]; then
-    folded ... finish-install "$LCOV_INSTALL_PID"
+    folded ... finish "$LCOV_INSTALL_PID"
   fi
   folded "Code coverage" code-coverage
-  folded ... finish-install "$FORMAT_INSTALL_PID"
+  folded ... finish "$FORMAT_INSTALL_PID"
   folded "Format check" format-check
 fi
+
+folded ... cat "$OUT"
