@@ -1,4 +1,4 @@
 #!/bin/bash -e
 
-git -C .cppsm submodule --quiet update --init --no-recommend-shallow --depth 1 .cli
+git -C .cppsm submodule --quiet update --init --no-recommend-shallow $GIT_DEPTH .cli
 .cppsm/.cli/travis-ci
