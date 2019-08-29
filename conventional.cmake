@@ -18,7 +18,7 @@ function(add_conventional_library name)
   file(GLOB_RECURSE include_files "include/${name}/*.hpp")
   source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/library" PREFIX "library" FILES ${library_files})
   source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" PREFIX "include" FILES ${include_files})
-  if ("${library_files}" STREQUAL "")
+  if("${library_files}" STREQUAL "")
     add_library(${name} INTERFACE)
     target_sources(${name} INTERFACE ${include_files})
     target_include_directories(${name}
