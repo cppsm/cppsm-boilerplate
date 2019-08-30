@@ -23,16 +23,22 @@ endfunction()
 function(add_conventional_library name)
   file(GLOB_RECURSE library_files "library/*.hpp" "library/*.cpp")
   file(GLOB_RECURSE include_files "include/${name}/*.hpp")
-  source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/library" PREFIX "library" FILES ${library_files})
-  source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" PREFIX "include" FILES ${include_files})
   if("${library_files}" STREQUAL "")
     add_library(${name} INTERFACE)
-    target_sources(${name} INTERFACE ${include_files})
     target_include_directories(${name}
       INTERFACE
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+	set(interface_name "${name}.interface")
+	source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" PREFIX "include" FILES ${include_files})
+	add_custom_target(${interface_name} SOURCES ${include_files})
+	target_conventional_folder(${interface_name})
+
+	add_dependencies(${name} ${interface_name})
   else()
+    source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/library" PREFIX "library" FILES ${library_files})
+    source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" PREFIX "include" FILES ${include_files})
     add_library(${name} ${library_files} ${include_files})
     target_include_directories(${name}
       PUBLIC
