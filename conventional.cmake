@@ -20,6 +20,13 @@ function(target_conventional_config name)
   endif()
 endfunction()
 
+function(conventional_source_group prefix files)
+  source_group(
+    TREE "${CMAKE_CURRENT_SOURCE_DIR}/${prefix}"
+    PREFIX "${prefix}"
+    FILES ${files})
+endfunction()
+
 function(add_conventional_library name)
   file(GLOB_RECURSE library_files "library/*.hpp" "library/*.cpp")
   file(GLOB_RECURSE include_files "include/${name}/*.hpp")
@@ -30,15 +37,15 @@ function(add_conventional_library name)
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-	set(interface_name "${name}.interface")
-	source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" PREFIX "include" FILES ${include_files})
-	add_custom_target(${interface_name} SOURCES ${include_files})
-	target_conventional_folder(${interface_name})
+    set(interface_name "${name}.interface")
+    conventional_source_group("include" "${include_files}")
+    add_custom_target(${interface_name} SOURCES ${include_files})
+    target_conventional_folder(${interface_name})
 
-	add_dependencies(${name} ${interface_name})
+    add_dependencies(${name} ${interface_name})
   else()
-    source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/library" PREFIX "library" FILES ${library_files})
-    source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/include" PREFIX "include" FILES ${include_files})
+    conventional_source_group("library" "${library_files}")
+    conventional_source_group("include" "${include_files}")
     add_library(${name} ${library_files} ${include_files})
     target_include_directories(${name}
       PUBLIC
@@ -53,7 +60,7 @@ endfunction()
 
 function(add_conventional_executable name)
   file(GLOB_RECURSE program_files "program/*.cpp" "program/*.hpp")
-  source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/program" PREFIX "program" FILES ${program_files})
+  conventional_source_group("program" "${program_files}")
   add_executable(${name} ${program_files})
   target_include_directories(${name}
     PRIVATE
@@ -64,7 +71,7 @@ endfunction()
 
 function(add_conventional_executable_test name)
   file(GLOB_RECURSE testing_files "testing/*.cpp" "testing/*.hpp")
-  source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/testing" PREFIX "testing" FILES ${testing_files})
+  conventional_source_group("testing" "${testing_files}")
   add_executable(${name} ${testing_files})
   target_include_directories(${name}
     PRIVATE
@@ -76,7 +83,7 @@ endfunction()
 
 function(add_conventional_executable_tests)
   file(GLOB_RECURSE test_sources "testing/*.cpp")
-  source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/testing" PREFIX "testing" FILES ${test_sources})
+  conventional_source_group("testing" "${test_sources}")
   foreach(test_source ${test_sources})
     get_filename_component(test ${test_source} NAME_WE)
     add_executable(${test} ${test_source})
