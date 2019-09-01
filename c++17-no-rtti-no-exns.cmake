@@ -8,7 +8,7 @@ option(CPPSM_EXCEPTIONS "Enable C++ exceptions" OFF)
 option(CPPSM_RTTI "Enable generation of RTTI information" OFF)
 
 if (MSVC)
-  set(CMAKE_CXX_FLAGS "/W4 /WX")
+  set(CMAKE_CXX_FLAGS "/W4 /WX /Oy")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
   if(NOT CPPSM_RTTI)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
