@@ -1,25 +1,8 @@
 include_guard(GLOBAL)
 
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-add_library(std_thread INTERFACE)
-if(UNIX AND NOT APPLE)
-  target_compile_options(std_thread INTERFACE -pthread)
-  target_link_libraries(std_thread INTERFACE "-Wl,-lpthread")
-endif()
-
-option(COVERAGE "Enable coverage reporting (only on GCC / Clang)" OFF)
-
 function(target_conventional_folder name)
   file(RELATIVE_PATH folder ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
   set_target_properties(${name} PROPERTIES FOLDER ${folder})
-endfunction()
-
-function(target_conventional_config name)
-  if(COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(${name} INTERFACE -g --coverage)
-    target_link_options(${name} INTERFACE --coverage)
-  endif()
 endfunction()
 
 function(conventional_source_group prefix files)
@@ -57,7 +40,6 @@ function(add_conventional_library name)
         "${CMAKE_CURRENT_SOURCE_DIR}/library")
     target_conventional_folder(${name})
   endif()
-  target_conventional_config(${name})
 endfunction()
 
 function(add_conventional_executable name)
@@ -68,7 +50,6 @@ function(add_conventional_executable name)
     PRIVATE
       "${CMAKE_CURRENT_SOURCE_DIR}/program")
   target_conventional_folder(${name})
-  target_conventional_config(${name})
 endfunction()
 
 function(add_conventional_executable_test name)
@@ -79,7 +60,6 @@ function(add_conventional_executable_test name)
     PRIVATE
       "${CMAKE_CURRENT_SOURCE_DIR}/testing")
   target_conventional_folder(${name})
-  target_conventional_config(${name})
   add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
@@ -91,7 +71,6 @@ function(add_conventional_executable_tests)
     add_executable(${test} ${test_source})
     target_link_libraries(${test} ${ARGV})
     target_conventional_folder(${test})
-    target_conventional_config(${test})
     add_test(NAME ${test} COMMAND ${test})
   endforeach()
 endfunction()
