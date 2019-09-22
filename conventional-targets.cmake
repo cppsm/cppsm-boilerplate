@@ -3,7 +3,7 @@ include_guard(GLOBAL)
 # Private ----------------------------------------------------------------------
 
 function(target_conventional_folder name)
-  file(RELATIVE_PATH folder ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+  file(RELATIVE_PATH folder ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
   set_target_properties(${name} PROPERTIES FOLDER ${folder})
 endfunction()
 

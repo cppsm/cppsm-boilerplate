@@ -1,4 +1,4 @@
-if(CPPSM)
+if("${CMAKE_SOURCE_DIR}" STREQUAL "${PROJECT_SOURCE_DIR}")
   enable_testing()
 
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
