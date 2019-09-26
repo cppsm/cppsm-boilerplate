@@ -14,7 +14,7 @@ function(add_conventional_targets_under directory)
 endfunction()
 
 function(add_conventional_targets_provided_under directory)
-  if(EXISTS "${directory}/provides" AND EXISTS "${directory}/.cppsm")
+  if(EXISTS "${directory}/.cppsm")
     add_conventional_targets_under("${directory}/provides")
   elseif(EXISTS "${directory}/CMakeLists.txt")
     add_subdirectory("${directory}")
