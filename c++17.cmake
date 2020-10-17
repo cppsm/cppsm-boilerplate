@@ -31,6 +31,7 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${PROJECT_SOURCE_DIR}")
     endif()
   endif()
 
+  include(.cppsm/emscripten.cmake)
   include(.cppsm/std_thread.cmake)
 endif()
 
